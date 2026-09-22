@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume Analyzer</title>
+  <style>
+    :root {
+      --bg: #f4f5fb; --card: #ffffff; --ink: #1b1f3b; --muted: #5d6280; --line: #dfe1ee;
+      --accent: #3d3ddb; --accent-dark: #2b2bb0; --accent-wash: #ecebff;
+      --good: #0e7c66; --good-wash: #dff5ee; --warn: #a15c07; --warn-wash: #fdf0d5; --bad: #b42318; --bad-wash: #fde8e6;
+      --serif: ui-serif, Georgia, "Times New Roman", serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 62rem; margin: 0 auto; padding: 1.8rem 1.25rem 4rem; }
+    h1 { margin: 0; font: 600 1.8rem/1.2 var(--serif); }
+    h2 { margin: 0 0 .8rem; font-size: 1.05rem; }
+    h3 { margin: 1rem 0 .4rem; font-size: .92rem; color: var(--muted); font-weight: 600; }
+    .sub { margin: .25rem 0 1.4rem; color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem 1.3rem; margin-bottom: 1rem; }
+
+    .tabs { display: inline-flex; gap: .25rem; padding: .25rem; background: #e6e7f5; border-radius: 10px; margin-bottom: 1rem; }
+    .tabs button { padding: .5rem 1rem; border: 0; border-radius: 8px; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+    .tabs button[aria-selected=true] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,31,59,.15); }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.2rem; }
+    @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+    label.field { display: block; margin-bottom: .35rem; font-weight: 600; font-size: .92rem; }
+    textarea, input[type=text] { width: 100%; padding: .65rem .75rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; color: var(--ink); }
+    textarea { resize: vertical; min-height: 11rem; }
+    .drop { display: block; padding: 1.4rem 1rem; border: 2px dashed var(--line); border-radius: 10px; text-align: center; color: var(--muted); cursor: pointer; background: #fafaff; }
+    .drop:hover, .drop.over { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-wash); }
+    .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .drop strong { display: block; color: var(--ink); overflow-wrap: anywhere; }
+    input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .row { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; margin-top: .9rem; }
+    .check { display: flex; align-items: center; gap: .45rem; color: var(--muted); font-size: .92rem; }
+    button.primary { padding: .65rem 1.4rem; border: 0; border-radius: 9px; background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button.primary:hover:not(:disabled) { background: var(--accent-dark); }
+    button.link { padding: 0; border: 0; background: none; color: var(--accent-dark); font: inherit; font-size: .9rem; text-decoration: underline; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .msg { margin: .8rem 0 0; min-height: 1.3rem; font-size: .92rem; color: var(--muted); }
+    .msg.error { color: var(--bad); }
+    .hidden { display: none !important; }
+
+    /* score */
+    .score { display: flex; gap: 1.6rem; align-items: center; flex-wrap: wrap; }
+    .ring { --pct: 0; width: 8.5rem; height: 8.5rem; border-radius: 50%; display: grid; place-items: center; flex: none;
+            background: conic-gradient(var(--ring-color, var(--accent)) calc(var(--pct) * 1%), #e6e7f2 0); }
+    .ring > div { width: 6.6rem; height: 6.6rem; border-radius: 50%; background: var(--card); display: grid; place-items: center; text-align: center; }
+    .ring b { font: 600 2.3rem/1 var(--serif); } .ring small { display: block; color: var(--muted); font-size: .75rem; }
+    .verdict { font: 600 1.35rem/1.3 var(--serif); margin: 0 0 .6rem; }
+    .bars { flex: 1; min-width: 14rem; }
+    .bar { display: grid; grid-template-columns: 6.5rem 1fr 3rem; gap: .6rem; align-items: center; margin: .3rem 0; font-size: .9rem; }
+    .bar .track { height: .55rem; border-radius: 99px; background: #e6e7f2; overflow: hidden; }
+    .bar .fill { height: 100%; background: var(--accent); border-radius: 99px; }
+    .bar .num { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .note { color: var(--muted); font-size: .85rem; margin: .5rem 0 0; }
+    .warnings { margin: 0 0 1rem; padding: .7rem 1rem; background: var(--warn-wash); border-radius: 10px; color: #5c3704; font-size: .92rem; }
+    .warnings p { margin: 0; } .warnings p + p { margin-top: .3rem; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .chip { padding: .2rem .65rem; border-radius: 99px; font-size: .85rem; border: 1px solid transparent; }
+    .chip.good { background: var(--good-wash); color: #075e4c; }
+    .chip.good.pref { background: #fff; border: 1px dashed var(--good); }
+    .chip.bad { background: var(--bad-wash); color: #8f1c12; }
+    .chip.bad.pref { background: #fff; border: 1px dashed var(--bad); }
+    .chip.neutral { background: #eceef7; color: var(--muted); }
+    .chip small { opacity: .75; margin-left: .3rem; }
+
+    .req { display: grid; grid-template-columns: 5.2rem 1fr; gap: .8rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+    .req:first-of-type { border-top: 0; }
+    .pill { align-self: start; text-align: center; padding: .1rem .4rem; border-radius: 6px; font-size: .78rem; font-weight: 600; }
+    .pill.strong { background: var(--good-wash); color: #075e4c; } .pill.partial { background: var(--warn-wash); color: var(--warn); } .pill.gap { background: var(--bad-wash); color: var(--bad); }
+    .req p { margin: 0; } .req .ev { margin-top: .2rem; color: var(--muted); font-size: .88rem; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; } @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+    .big { font: 600 1.5rem/1.2 var(--serif); margin: 0; }
+    ul.list { margin: .2rem 0 0; padding-left: 1.2rem; } ul.list li { margin: .3rem 0; }
+    .rewrite { border: 1px solid var(--line); border-radius: 10px; padding: .7rem .9rem; margin: .6rem 0; font-size: .92rem; }
+    .rewrite .was { color: var(--muted); text-decoration: line-through; } .rewrite .now { margin: .3rem 0; font-weight: 600; } .rewrite .why { color: var(--muted); }
+
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .5rem; border-top: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; border-top: 0; }
+    td.num { font: 600 1.2rem/1 var(--serif); }
+    .jobrow { border: 1px solid var(--line); border-radius: 10px; padding: .8rem; margin-bottom: .7rem; }
+    .jobrow input { margin-bottom: .5rem; } .jobrow textarea { min-height: 5rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Resume Analyzer</h1>
+  <p class="sub">See how well a resume fits a job: matching skills, what is missing, experience gaps, and how to improve it.</p>
+
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" aria-selected="true" data-tab="analyze">Analyze</button>
+    <button role="tab" aria-selected="false" data-tab="jobs">Match jobs</button>
+    <button role="tab" aria-selected="false" data-tab="resumes">Rank resumes</button>
+  </div>
+
+  <!-- ANALYZE -->
+  <section id="tab-analyze">
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label class="field">Resume (PDF)</label>
+          <label class="drop" data-drop="a-resume"><strong data-name="a-resume">Drop a PDF here or click to choose</strong><input type="file" id="a-resume" accept=".pdf,.txt,application/pdf"></label>
+        </div>
+        <div>
+          <label class="field" for="a-jd">Job description</label>
+          <textarea id="a-jd" placeholder="Paste the job description here…"></textarea>
+          <button class="link" type="button" id="a-sample">Use a sample job description</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="a-go" type="button">Analyze</button>
+        <label class="check"><input type="checkbox" id="a-llm" checked> Include AI feedback</label>
+      </div>
+      <p class="msg" id="a-msg" role="status"></p>
+    </div>
+    <div id="a-result"></div>
+  </section>
+
+  <!-- MATCH JOBS -->
+  <section id="tab-jobs" class="hidden">
+    <div class="card">
+      <label class="field">Resume (PDF)</label>
+      <label class="drop" data-drop="j-resume"><strong data-name="j-resume">Drop a PDF here or click to choose</strong><input type="file" id="j-resume" accept=".pdf,.txt,application/pdf"></label>
+      <h3>Jobs to compare</h3>
+      <div id="j-list"></div>
+      <div class="row" style="margin-top:.2rem">
+        <button class="link" type="button" id="j-add">Add another job</button>
+        <button class="link" type="button" id="j-sample">Load 3 sample jobs</button>
+      </div>
+      <div class="row"><button class="primary" id="j-go" type="button">Rank jobs</button></div>
+      <p class="msg" id="j-msg" role="status"></p>
+    </div>
+    <div id="j-result"></div>
+  </section>
+
+  <!-- RANK RESUMES -->
+  <section id="tab-resumes" class="hidden">
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label class="field">Resumes (PDF, several allowed)</label>
+          <label class="drop" data-drop="r-resumes"><strong data-name="r-resumes">Drop PDFs here or click to choose</strong><input type="file" id="r-resumes" accept=".pdf,.txt,application/pdf" multiple></label>
+        </div>
+        <div>
+          <label class="field" for="r-jd">Job description</label>
+          <textarea id="r-jd" placeholder="Paste the job description here…"></textarea>
+        </div>
+      </div>
+      <div class="row"><button class="primary" id="r-go" type="button">Rank resumes</button></div>
+      <p class="msg" id="r-msg" role="status"></p>
+    </div>
+    <div id="r-result"></div>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const SAMPLE_JD = `Machine Learning Engineer
+
+Requirements:
+- 3+ years of experience building backend services in Python
+- Strong experience with FastAPI or Flask and REST APIs
+- Experience deploying services with Docker and Kubernetes on AWS
+- Solid knowledge of SQL and PostgreSQL
+- Experience with MLflow or similar tools for tracking and serving models
+- Bachelor's degree in Computer Science or a related field
+- Strong communication skills and experience mentoring teammates
+
+Nice to have:
+- Experience with LLMs, RAG and vector databases
+- Terraform or other infrastructure as code tools`;
+  const SAMPLE_JOBS = [
+    { title: "Machine Learning Engineer", description: SAMPLE_JD },
+    { title: "Frontend Developer", description: "Looking for a frontend developer with 4+ years of experience in React, TypeScript, HTML and CSS. You will build responsive interfaces, write unit tests with Jest and work closely with designers in Figma. Nice to have: Next.js and GraphQL." },
+    { title: "Data Analyst", description: "Join our analytics team to build dashboards in Tableau and Power BI. Requirements: 2+ years of experience with SQL, Python and Pandas. You will clean data, run statistical analysis and present insights to stakeholders. Strong communication skills required." },
+  ];
+
+  /* ---------- helpers ---------- */
+  function h(tag, attrs, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === "class") node.className = v; else if (k === "text") node.textContent = v; else node.setAttribute(k, v);
+    }
+    for (const c of children) if (c !== null && c !== undefined && c !== false) node.append(c);
+    return node;
+  }
+  async function call(path, options) {
+    const res = await fetch(path, options);
+    let body = null;
+    try { body = await res.json(); } catch (_) {}
+    if (!res.ok) {
+      const d = body && body.detail;
+      throw new Error(typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => x.msg).join("; ") : `Request failed (${res.status})`);
+    }
+    return body;
+  }
+  function setMsg(id, text, error) { $(id).textContent = text || ""; $(id).className = "msg" + (error ? " error" : ""); }
+  const pct = (n) => (n === null || n === undefined ? "n/a" : Math.round(n));
+  const scoreColor = (s) => (s >= 75 ? "var(--good)" : s >= 55 ? "var(--accent)" : s >= 35 ? "var(--warn)" : "var(--bad)");
+
+  /* ---------- tabs and file pickers ---------- */
+  document.querySelectorAll("#tabs button").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+    for (const name of ["analyze", "jobs", "resumes"]) $("tab-" + name).classList.toggle("hidden", name !== btn.dataset.tab);
+  }));
+  function showNames(id) {
+    const files = Array.from($(id).files);
+    document.querySelector(`[data-name="${id}"]`).textContent = files.length ? files.map((f) => f.name).join(", ") : "Drop a PDF here or click to choose";
+  }
+  document.querySelectorAll("[data-drop]").forEach((zone) => {
+    const id = zone.dataset.drop, input = $(id);
+    input.addEventListener("change", () => showNames(id));
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault(); zone.classList.remove("over");
+      const dt = new DataTransfer();
+      Array.from(e.dataTransfer.files).slice(0, input.multiple ? 50 : 1).forEach((f) => dt.items.add(f));
+      input.files = dt.files; showNames(id);
+    });
+  });
+
+  /* ---------- result pieces ---------- */
+  function bar(label, value) {
+    return h("div", { class: "bar" }, h("span", { text: label }),
+      h("div", { class: "track" }, h("div", { class: "fill", style: `width:${value === null ? 0 : Math.max(2, value)}%` })),
+      h("span", { class: "num", text: pct(value) }));
+  }
+  function scoreCard(r) {
+    const ring = h("div", { class: "ring" }, h("div", {}, h("span", {}, h("b", { text: Math.round(r.overall_score) }), h("small", { text: "out of 100" }))));
+    ring.style.setProperty("--pct", r.overall_score);
+    ring.style.setProperty("--ring-color", scoreColor(r.overall_score));
+    const bars = h("div", { class: "bars" }, h("p", { class: "verdict", text: r.verdict }),
+      bar("Meaning match", r.scores.semantic), bar("Skills", r.scores.skills), bar("Experience", r.scores.experience));
+    if (r.scores.document_similarity !== null) bars.append(h("p", { class: "note", text: `Whole-document similarity: ${r.scores.document_similarity}` }));
+    return h("div", { class: "card score" }, ring, bars);
+  }
+  function chip(text, cls, extra) { return h("span", { class: "chip " + cls }, text, extra ? h("small", { text: extra }) : null); }
+  function skillsCard(sk) {
+    const card = h("div", { class: "card" }, h("h2", { text: "Skills" }));
+    card.append(h("h3", { text: `Found in your resume (${sk.matched.length})` }));
+    card.append(h("div", { class: "chips" }, ...(sk.matched.length ? sk.matched.map((s) =>
+      chip(s.name, "good" + (s.importance === "preferred" ? " pref" : ""), s.evidence === "listed only" ? "listed only" : "")) : [chip("None of the job's skills were found", "neutral")])));
+    card.append(h("h3", { text: `Missing (${sk.missing.length}). Dashed = nice to have` }));
+    card.append(h("div", { class: "chips" }, ...(sk.missing.length ? sk.missing.map((s) =>
+      chip(s.name, "bad" + (s.importance === "preferred" ? " pref" : ""))) : [chip("Nothing missing", "good")])));
+    if (sk.extra.length) {
+      card.append(h("h3", { text: "Other skills you have (not asked for)" }));
+      card.append(h("div", { class: "chips" }, ...sk.extra.map((s) => chip(s, "neutral"))));
+    }
+    card.append(h("p", { class: "note", text: "“Listed only” means the skill appears in a skills list but not in your experience or projects, so it counts for less." }));
+    return card;
+  }
+  function requirementsCard(reqs) {
+    if (!reqs.length) return null;
+    const order = { gap: 0, partial: 1, strong: 2 };
+    const sorted = [...reqs].sort((a, b) => order[a.status] - order[b.status] || a.similarity - b.similarity);
+    const card = h("div", { class: "card" }, h("h2", { text: "Job requirements vs your resume" }));
+    for (const r of sorted) {
+      card.append(h("div", { class: "req" }, h("span", { class: "pill " + r.status, text: r.status === "gap" ? "Gap" : r.status === "partial" ? "Partial" : "Strong" }),
+        h("div", {}, h("p", { text: r.requirement }), h("p", { class: "ev", text: "Closest in your resume: " + r.evidence }))));
+    }
+    return card;
+  }
+  function expEduCard(r) {
+    const e = r.experience, d = r.education;
+    const expText = e.estimated_years === null ? "Unknown" : `${e.estimated_years} years`;
+    const verdict = (met) => (met === null ? "" : met ? " ✓" : " ✗");
+    return h("div", { class: "two" },
+      h("div", { class: "card" }, h("h2", { text: "Experience" }), h("p", { class: "big", text: expText + verdict(e.met) }),
+        h("p", { class: "note", text: (e.required_years ? `The job asks for about ${e.required_years} years. ` : "") + (e.gap_years ? `Gap: ${e.gap_years} years. ` : "") + e.note })),
+      h("div", { class: "card" }, h("h2", { text: "Education" }), h("p", { class: "big", text: d.found + verdict(d.met) }),
+        h("p", { class: "note", text: d.required ? `The job asks for a ${d.required}.` : "The job does not state a degree." })));
+  }
+  function list(items) { return h("ul", { class: "list" }, ...items.map((t) => h("li", { text: t }))); }
+  function feedbackCard(r) {
+    if (r.feedback_error) return h("div", { class: "card" }, h("h2", { text: "AI feedback" }), h("p", { class: "note", text: r.feedback_error }));
+    const f = r.feedback;
+    if (!f) return null;
+    const card = h("div", { class: "card" }, h("h2", { text: "AI feedback" }), h("p", { text: f.summary }));
+    const section = (title, items) => { if (items.length) card.append(h("h3", { text: title }), list(items)); };
+    section("Strengths", f.strengths); section("Gaps", f.gaps); section("Do these first", f.priority_actions);
+    if (f.bullet_rewrites.length) {
+      card.append(h("h3", { text: "Suggested rewrites" }));
+      for (const b of f.bullet_rewrites) card.append(h("div", { class: "rewrite" }, h("div", { class: "was", text: b.original }), h("div", { class: "now", text: b.improved }), h("div", { class: "why", text: b.reason })));
+    }
+    if (f.keywords_to_add.length) card.append(h("h3", { text: "Keywords to consider (only if true for you)" }), h("div", { class: "chips" }, ...f.keywords_to_add.map((k) => chip(k, "neutral"))));
+    section("Format tips for applicant tracking systems", f.ats_tips);
+    return card;
+  }
+  function renderAnalysis(r) {
+    const root = $("a-result"); root.replaceChildren();
+    if (r.warnings.length) root.append(h("div", { class: "warnings" }, ...r.warnings.map((w) => h("p", { text: w }))));
+    for (const part of [scoreCard(r), skillsCard(r.skills), requirementsCard(r.requirements), expEduCard(r), feedbackCard(r)]) if (part) root.append(part);
+  }
+  function rankingTable(head, rows) {
+    const table = h("table", {}, h("thead", {}, h("tr", {}, ...head.map((t) => h("th", { text: t })))), h("tbody", {}, ...rows));
+    return h("div", { class: "card", style: "overflow-x:auto" }, table);
+  }
+  function chipsCell(names, cls, max) {
+    const shown = names.slice(0, max), extra = names.length - shown.length;
+    return h("td", {}, h("div", { class: "chips" }, ...shown.map((n) => chip(n, cls)), extra > 0 ? chip(`+${extra}`, "neutral") : null));
+  }
+  function problems(list) { return list.length ? h("div", { class: "warnings" }, ...list.map((e) => h("p", { text: `${e.name}: ${e.error}` }))) : null; }
+
+  /* ---------- actions ---------- */
+  async function busy(btnId, msgId, text, fn) {
+    $(btnId).disabled = true; setMsg(msgId, text);
+    try { await fn(); setMsg(msgId, ""); } catch (err) { setMsg(msgId, err.message, true); } finally { $(btnId).disabled = false; }
+  }
+  $("a-sample").addEventListener("click", () => { $("a-jd").value = SAMPLE_JD; });
+  $("a-go").addEventListener("click", () => busy("a-go", "a-msg", "Analyzing… (AI feedback can take a few seconds)", async () => {
+    const file = $("a-resume").files[0], jd = $("a-jd").value.trim();
+    if (!file) throw new Error("Choose a resume PDF first.");
+    if (!jd) throw new Error("Paste a job description first.");
+    const form = new FormData();
+    form.append("resume", file); form.append("job_description", jd); form.append("use_llm", $("a-llm").checked ? "true" : "false");
+    renderAnalysis(await call("/analyze", { method: "POST", body: form }));
+  }));
+
+  let jobs = [{ title: "", description: "" }];
+  function renderJobs() {
+    const box = $("j-list"); box.replaceChildren();
+    jobs.forEach((job, i) => {
+      const title = h("input", { type: "text", placeholder: "Job title", "aria-label": `Job ${i + 1} title` }); title.value = job.title;
+      const desc = h("textarea", { placeholder: "Paste the job description…", "aria-label": `Job ${i + 1} description` }); desc.value = job.description;
+      title.addEventListener("input", () => { job.title = title.value; }); desc.addEventListener("input", () => { job.description = desc.value; });
+      const remove = h("button", { class: "link", type: "button", text: "Remove" });
+      remove.addEventListener("click", () => { jobs.splice(i, 1); if (!jobs.length) jobs.push({ title: "", description: "" }); renderJobs(); });
+      box.append(h("div", { class: "jobrow" }, title, desc, remove));
+    });
+  }
+  $("j-add").addEventListener("click", () => { jobs.push({ title: "", description: "" }); renderJobs(); });
+  $("j-sample").addEventListener("click", () => { jobs = SAMPLE_JOBS.map((j) => ({ ...j })); renderJobs(); });
+  $("j-go").addEventListener("click", () => busy("j-go", "j-msg", "Comparing…", async () => {
+    const file = $("j-resume").files[0];
+    const filled = jobs.filter((j) => j.description.trim()).map((j, i) => ({ title: j.title.trim() || `Job ${i + 1}`, description: j.description }));
+    if (!file) throw new Error("Choose a resume PDF first.");
+    if (!filled.length) throw new Error("Add at least one job description.");
+    const form = new FormData(); form.append("resume", file); form.append("jobs", JSON.stringify(filled));
+    const data = await call("/match-jobs", { method: "POST", body: form });
+    const rows = data.ranking.map((r) => h("tr", {}, h("td", { text: r.rank }), h("td", { text: r.title }), h("td", { class: "num", text: Math.round(r.overall_score) }), h("td", { text: r.verdict }), chipsCell(r.missing_skills, "bad", 5)));
+    const root = $("j-result"); root.replaceChildren();
+    const issue = problems(data.errors); if (issue) root.append(issue);
+    root.append(rankingTable(["#", "Job", "Score", "Verdict", "Required skills you are missing"], rows));
+  }));
+
+  $("r-go").addEventListener("click", () => busy("r-go", "r-msg", "Comparing…", async () => {
+    const files = Array.from($("r-resumes").files), jd = $("r-jd").value.trim();
+    if (!files.length) throw new Error("Choose at least one resume.");
+    if (!jd) throw new Error("Paste a job description first.");
+    const form = new FormData(); files.forEach((f) => form.append("resumes", f)); form.append("job_description", jd);
+    const data = await call("/rank-resumes", { method: "POST", body: form });
+    const rows = data.ranking.map((r) => h("tr", {}, h("td", { text: r.rank }), h("td", { text: r.filename }), h("td", { class: "num", text: Math.round(r.overall_score) }),
+      h("td", { text: r.estimated_years === null ? "?" : `${r.estimated_years} yrs` }), chipsCell(r.missing_skills, "bad", 4)));
+    const root = $("r-result"); root.replaceChildren();
+    const issue = problems(data.errors); if (issue) root.append(issue);
+    root.append(rankingTable(["#", "Resume", "Score", "Experience", "Required skills missing"], rows));
+  }));
+
+  renderJobs();
+</script>
+</body>
+</html>

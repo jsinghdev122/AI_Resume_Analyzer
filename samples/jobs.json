@@ -1,0 +1,5 @@
+[
+  {"title": "Machine Learning Engineer", "description": "We need an ML engineer with 3+ years of experience building backend services in Python. You will use FastAPI, Docker, Kubernetes and AWS to deploy models. Experience with MLflow, SQL and PostgreSQL is required. Bachelor's degree in Computer Science. Nice to have: LLMs, RAG and vector databases."},
+  {"title": "Frontend Developer", "description": "Looking for a frontend developer with 4+ years of experience in React, TypeScript, HTML and CSS. You will build responsive interfaces, write unit tests with Jest and work closely with designers in Figma. Nice to have: Next.js and GraphQL."},
+  {"title": "Data Analyst", "description": "Join our analytics team to build dashboards in Tableau and Power BI. Requirements: 2+ years of experience with SQL, Python and Pandas. You will clean data, run statistical analysis and present insights to stakeholders. Strong communication skills required."}
+]

@@ -1,0 +1,21 @@
+Machine Learning Engineer
+
+About the role
+We are building AI features for our customer support platform and need an engineer who can take models from notebook to production.
+
+Requirements:
+- 3+ years of experience building backend services in Python
+- Strong experience with FastAPI or Flask and REST APIs
+- Experience deploying services with Docker and Kubernetes on AWS
+- Solid knowledge of SQL and PostgreSQL
+- Experience with MLflow or similar tools for tracking and serving models
+- Bachelor's degree in Computer Science or a related field
+- Strong communication skills and experience mentoring teammates
+
+Nice to have:
+- Experience with LLMs, RAG and vector databases
+- Terraform or other infrastructure as code tools
+- Knowledge of Apache Spark
+
+What we offer
+Competitive salary, health insurance and flexible working hours. We are an equal opportunity employer.

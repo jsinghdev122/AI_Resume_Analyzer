@@ -1,0 +1,28 @@
+Alex Morgan
+alex.morgan@example.com | +1 415 555 0142 | github.com/alexmorgan-demo
+
+SUMMARY
+Software engineer with 6 years of experience building data-driven web services and machine learning features.
+
+SKILLS
+Python, SQL, FastAPI, Flask, PostgreSQL, Redis, Docker, AWS, Git, scikit-learn, Pandas, NumPy, Agile
+
+EXPERIENCE
+Backend Engineer - BrightPath Analytics                      Mar 2022 - Present
+- Built REST APIs with FastAPI and PostgreSQL serving 2 million requests per day
+- Containerized services with Docker and automated deployments with GitHub Actions CI/CD pipelines
+- Trained and shipped a churn prediction model using scikit-learn and Pandas, improving retention campaigns by 12%
+- Mentored two junior engineers and led weekly code reviews
+
+Data Analyst - Northwind Retail                              Jun 2020 - Feb 2022
+- Wrote SQL queries and Python scripts to automate weekly sales reporting
+- Created Tableau dashboards used by 30 store managers
+- Cleaned and modelled data for demand forecasting experiments
+
+PROJECTS
+Document Q&A Assistant
+- Built a retrieval-augmented generation app with embeddings, a vector database and an LLM API
+- Deployed the FastAPI service in a Docker container
+
+EDUCATION
+B.Tech in Computer Science, State Institute of Technology, 2016 - 2020
